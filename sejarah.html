@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CBT SEJARAH - FULL SYSTEM</title>
+    <style>
+        body { font-family: sans-serif; background: #f4f7f6; color: #000; margin: 0; padding: 15px; }
+        .box { background: #fff; max-width: 800px; margin: auto; padding: 25px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); border: 1px solid #ddd; }
+        .hidden { display: none !important; }
+        h2 { color: #2c3e50; text-align: center; }
+        label { display: block; font-weight: bold; margin-top: 15px; }
+        input { width: 100%; padding: 12px; margin-top: 5px; border-radius: 8px; border: 2px solid #bdc3c7; box-sizing: border-box; font-size: 16px; color: #000; }
+        button { padding: 12px; border-radius: 8px; border: none; cursor: pointer; font-weight: bold; font-size: 16px; width: 100%; margin-top: 10px; }
+        .btn-p { background: #2c3e50; color: #fff; }
+        .btn-d { background: #e74c3c; color: #fff; height: 55px; margin-top: 30px; }
+        .timer { font-size: 24px; font-weight: bold; color: #d35400; text-align: center; margin-bottom: 15px; background: #fff3e0; padding: 10px; border-radius: 10px; border: 2px solid #ffcc80; }
+        .option { background: #fdfdfd; padding: 15px; margin: 10px 0; border-radius: 10px; cursor: pointer; border: 2px solid #ecf0f1; color: #000; transition: 0.3s; }
+        .option.correct { background: #d4edda !important; border-color: #28a745 !important; color: #155724 !important; font-weight: bold; }
+        .option.wrong { background: #f8d7da !important; border-color: #dc3545 !important; color: #721c24 !important; }
+        textarea { width: 100%; height: 120px; border-radius: 10px; padding: 15px; border: 2px solid #bdc3c7; box-sizing: border-box; font-size: 16px; background: #fff; color: #000; margin-top: 10px; }
+        .n-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(45px, 1fr)); gap: 8px; margin-top: 20px; }
+        .n-btn { height: 45px; line-height: 45px; text-align: center; background: #ecf0f1; cursor: pointer; border-radius: 8px; border: 1px solid #bdc3c7; font-weight: bold; color: #2c3e50; }
+        .n-btn.done { background: #27ae60; color: white; border-color: #27ae60; }
+        .n-btn.current { border: 3px solid #f39c12; background: #fff; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        .rank-title { margin-top: 30px; padding: 12px; background: #2c3e50; color: white; border-radius: 8px; text-align: center; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+<audio id="audioUjian" loop><source src="Kebunku.mp3" type="audio/mpeg"></audio>
+
+<div class="box">
+    <div id="v-login">
+        <h2>CBT SEJARAH - FULL</h2>
+        <label>Nomor Peserta:</label>
+        <input type="text" id="no-peserta" placeholder="Contoh: 001">
+        <label>Nama Lengkap:</label>
+        <input type="text" id="nama-user" placeholder="Nama Anda">
+        <label>Password:</label>
+        <input type="password" id="pass" placeholder="sejarah2">
+        <button class="btn-p" onclick="mulaiUjian()">MULAI & PUTAR MUSIK</button>
+    </div>
+
+    <div id="v-kuis" class="hidden">
+        <div class="timer" id="t-waktu">90:00</div>
+        <div id="user-display" style="font-weight: bold; margin-bottom: 10px; border-bottom: 2px solid #ddd; padding-bottom: 5px;"></div>
+        <h3 id="t-soal"></h3>
+        <div id="opsi-box"></div>
+        <div style="display: flex; gap: 10px; margin-top: 25px;">
+            <button onclick="prev()" style="background: #bdc3c7; color: #000;">&larr; KEMBALI</button>
+            <button onclick="next()" style="background: #bdc3c7; color: #000;">LANJUT &rarr;</button>
+        </div>
+        <div class="n-grid" id="nav-grid"></div>
+        <button class="btn-d" onclick="kirimUjian()">SELESAI & KIRIM</button>
+    </div>
+
+    <div id="v-hasil" class="hidden" style="text-align: center;">
+        <h2 style="color: #27ae60;">DATA TERKIRIM!</h2>
+        <p>Skor Pilihan Ganda:</p>
+        <h1 id="skor-final" style="font-size: 70px; color: #2c3e50;">0</h1>
+        <button class="btn-p" onclick="tampilLeaderboard()">LIHAT PERINGKAT</button>
+    </div>
+
+    <div id="v-rank" class="hidden">
+        <h2>RANKING KELAS</h2>
+        <div class="rank-title">⭐ 20 TERTINGGI</div>
+        <table id="table-top"><thead><tr><th>Nama</th><th>Skor</th></tr></thead><tbody></tbody></table>
+        <div class="rank-title" style="background: #e74c3c;">📉 20 TERENDAH</div>
+        <table id="table-bottom"><thead><tr><th>Nama</th><th>Skor</th></tr></thead><tbody></tbody></table>
+        <button class="btn-p" onclick="location.reload()" style="background: #f39c12;">KEMBALI</button>
+    </div>
+</div>
+
+<script>
+// GANTI LINK DIBAWAH INI DENGAN URL WEB APP KAMU
+const DATABASE_URL = "https://script.google.com/macros/s/AKfycbw9TiRj7GzSboBX4_eU4T21Ns8CrNdBUUff2C97HPSoVYiQ6CHwKzcDhgHYe-uiBnH65Q/exec"; 
+
+let n = 0, waktu = 5400, isAnswered = Array(30).fill(false), namaSiswa = "", nomorPeserta = "";
+
+const questions = [
+    // 25 PG
+    { type: "pg", q: "Kitab Nagarakertagama ditulis oleh ....", o: ["Empu Sindok", "Empu Prapanca", "Empu Gandring", "Empu Kenwa", "Empu Sedah"], a: 1 },
+    { type: "pg", q: "Raja Kerajaan Singasari (1227-1248 Masehi) adalah ....", o: ["Ken Arok", "Tohjoyo", "Ranggawuni", "Anusapati", "Kertanegara"], a: 3 },
+    { type: "pg", q: "Pengrajin tembikar tertua ditemukan di ....", o: ["Trowulan", "Sangiran", "Kalasan", "Bayat", "Prampanan"], a: 1 },
+    { type: "pg", q: "Prasasti di Kompleks Biaro Bahal adalah ....", o: ["Prasasti Kalasan", "Prasasti Canggal", "Prasasti Yupa", "Prasasti Kedukan Bukit", "Prasasti Panai"], a: 4 },
+    { type: "pg", q: "Struktur sosial Kerajaan Melayu dipengaruhi oleh ....", o: ["Hindu", "Buddha", "Islam", "Konghucu", "Kristen"], a: 1 },
+    { type: "pg", q: "Raja Melayu tahun 1286 Masehi adalah ....", o: ["Srimat Tralokyaraja", "Akarendrawarman", "Srimat Tribhuwanaraja", "Adityawarman", "Anggawarman"], a: 2 },
+    { type: "pg", q: "Komoditas penting masa Hindu-Buddha adalah ....", o: ["beras, pala", "cengkih, kina", "kopi, karet", "pala, cengkih, cendana", "kayu manis"], a: 3 },
+    { type: "pg", q: "Kerajaan Panai terletak di lembah ....", o: ["Sungai Kapuas", "Sungai Solo", "Sungai Panai & Barumun", "Sungai Widas", "Sungai Cimanuk"], a: 2 },
+    { type: "pg", q: "Istilah candi berasal dari kata Candika, yaitu ....", o: ["tempat ziarah", "nama Dewi Durga", "tempat ibadah", "bangunan abu", "nama Dewi Laksmi"], a: 1 },
+    { type: "pg", q: "Jalan laut penghubung Arab dan Cina adalah ....", o: ["Selat Malaka", "Selat Sunda", "Selat Bali", "Laut Jawa", "Samudra Pasifik"], a: 0 },
+    { type: "pg", q: "Kerajaan Mataram Kuno diperintah wangsa ....", o: ["Sanjaya & Girindra", "Sanjaya & Syailendra", "Isyana & Sanjaya", "Syailendra & Isyana", "Girindra & Isyana"], a: 1 },
+    { type: "pg", q: "Kerajaan Kediri dibayangi oleh ....", o: ["Kutai", "Jenggala", "Sriwijaya", "Majapahit", "Cholamandala"], a: 1 },
+    { type: "pg", q: "Persatuan Sanjaya dan Syailendra membuktikan ....", o: ["hukum", "persaingan", "kerukunan", "pertukaran", "toleransi"], a: 4 },
+    { type: "pg", q: "Raja Balaputradewa ada dalam prasasti ....", o: ["Ligor", "Nalanda", "Kedukan Bukit", "Telaga batu", "Kota kapur"], a: 1 },
+    { type: "pg", q: "Masyarakat Kutai mendapat unsur India dari aspek ....", o: ["Politik", "Budaya", "Sosial", "Agama", "Ekonomi"], a: 0 },
+    { type: "pg", q: "Raja Mataram dari Dinasti Syailendra adalah ....", o: ["Bhanu, Wisnu, Indra", "Sanjaya", "Rakai Pikatan", "Dyah Balitung", "Airlangga"], a: 0 },
+    { type: "pg", q: "Kelemahan teori waisya adalah ....", o: ["tidak ada hubungan", "untung", "dimusuhi", "tidak kuasai Sanskerta", "hanya brahmana"], a: 3 },
+    { type: "pg", q: "Balaputradewa merupakan cucu dari raja ....", o: ["Minahasa", "Bekti", "Malaka", "Indra", "putra"], a: 3 },
+    { type: "pg", q: "Letak Kutai strategis karena ....", o: ["selat malaka", "jalur perdagangan Kaltim", "Sungai Brantas", "Bengawan Solo", "wilayah luas"], a: 1 },
+    { type: "pg", q: "Teori Kedatangan Hindu menurut J.L. Moens adalah ....", o: ["Brahmana", "Kesatria", "arus balik", "sudra", "waisya"], a: 1 },
+    { type: "pg", q: "Teori Hindu oleh orang buangan adalah ....", o: ["waisya", "sudra", "brahmana", "kesatria", "arus balik"], a: 1 },
+    { type: "pg", q: "Kontak Budaya Nusantara-India diawali dengan ....", o: ["kaum brahmana", "ramainya dagang", "Sanskerta", "Budaya India", "politik"], a: 1 },
+    { type: "pg", q: "Prasasti telapak kaki gajah Airawati adalah ....", o: ["Kebon kopi", "Jambu", "Lebak", "Pasir Awi", "Ciaruteun"], a: 0 },
+    { type: "pg", q: "Cucu Kudungga yang memeluk Hindu adalah ....", o: ["Mulawarman", "Sri Purawarman", "Purnawarman", "Dewapala", "Balaputradewa"], a: 0 },
+    { type: "pg", q: "Kitab hukum Majapahit bernama ....", o: ["Bendasari", "Panjiwijaya", "Kunjarakarna", "Trowulan", "Kutaramanawa"], a: 4 },
+    // 5 Essay
+    { type: "essay", q: "Jelaskan hubungan Sriwijaya dengan Dewapaladewa!" },
+    { type: "essay", q: "Jelaskan puncak keemasan Kerajaan Kutai!" },
+    { type: "essay", q: "Sebutkan satu peninggalan Hindu-Buddha di Nusantara!" },
+    { type: "essay", q: "Jelaskan prasasti peninggalan Tarumanegara!" },
+    { type: "essay", q: "Mengapa Sriwijaya disebut Kerajaan Maritim?" }
+];
+
+function mulaiUjian() {
+    namaSiswa = document.getElementById('nama-user').value.trim();
+    nomorPeserta = document.getElementById('no-peserta').value.trim();
+    if (!namaSiswa || !nomorPeserta) return alert("Isi Nama & Nomor!");
+    if (document.getElementById('pass').value !== "sejarah2") return alert("Password Salah!");
+    
+    document.getElementById('audioUjian').play().catch(e=>{});
+    document.getElementById('v-login').classList.add('hidden');
+    document.getElementById('v-kuis').classList.remove('hidden');
+    document.getElementById('user-display').innerText = "PESERTA: " + namaSiswa.toUpperCase();
+    tampil(); mulaiTimer();
+}
+
+function tampil() {
+    const q = questions[n], box = document.getElementById('opsi-box');
+    document.getElementById('t-soal').innerText = (n + 1) + ". " + q.q;
+    box.innerHTML = "";
+    if (q.type === "pg") {
+        q.o.forEach((opsi, i) => {
+            let cls = "";
+            if (isAnswered[n] !== false) {
+                if (i === q.a) cls = "correct";
+                else if (i === isAnswered[n]) cls = "wrong";
+            }
+            box.innerHTML += `<div class="option ${cls}" onclick="pilih(${i})">${String.fromCharCode(65 + i)}. ${opsi}</div>`;
+        });
+    } else {
+        box.innerHTML = `<textarea oninput="isAnswered[n]=this.value; renderGrid();">${isAnswered[n] || ""}</textarea>`;
+    }
+    renderGrid();
+}
+
+function pilih(idx) {
+    if (isAnswered[n] !== false) return;
+    isAnswered[n] = idx;
+    tampil();
+}
+
+function renderGrid() {
+    const grid = document.getElementById('nav-grid'); grid.innerHTML = "";
+    for (let i = 0; i < 30; i++) {
+        let btn = document.createElement('div');
+        btn.className = "n-btn " + (isAnswered[i] !== false ? "done" : "") + (i === n ? " current" : "");
+        btn.innerText = i + 1;
+        btn.onclick = () => { n = i; tampil(); };
+        grid.appendChild(btn);
+    }
+}
+
+function mulaiTimer() {
+    setInterval(() => { if (waktu > 0) { waktu--; let m = Math.floor(waktu/60), s = waktu%60; document.getElementById('t-waktu').innerText = (m<10?'0'+m:m)+":"+(s<10?'0'+s:s); }}, 1000);
+}
+
+async function kirimUjian() {
+    if (!confirm("Kirim sekarang?")) return;
+    let b = 0, essayText = "";
+    for(let i=0; i<25; i++) { if (isAnswered[i] === questions[i].a) b++; }
+    for(let i=25; i<30; i++) { essayText += "(No "+(i+1)+": " + (isAnswered[i] || "-") + ") "; }
+    const skor = ((b / 25) * 100).toFixed(2);
+
+    let logs = JSON.parse(localStorage.getItem('cbt_v4') || "[]");
+    logs.push({ nama: namaSiswa, skor: parseFloat(skor) });
+    localStorage.setItem('cbt_v4', JSON.stringify(logs));
+
+    try {
+        fetch(DATABASE_URL, { method: "POST", mode: "no-cors", body: JSON.stringify({ nama: namaSiswa, no: nomorPeserta, skor: skor, essay: essayText }) });
+    } catch (e) {}
+
+    document.getElementById('v-kuis').classList.add('hidden');
+    document.getElementById('v-hasil').classList.remove('hidden');
+    document.getElementById('skor-final').innerText = skor;
+}
+
+function tampilLeaderboard() {
+    document.getElementById('v-hasil').classList.add('hidden');
+    document.getElementById('v-rank').classList.remove('hidden');
+    let logs = JSON.parse(localStorage.getItem('cbt_v4') || "[]");
+    let top = [...logs].sort((a,b) => b.skor - a.skor).slice(0,20);
+    let bot = [...logs].sort((a,b) => a.skor - b.skor).slice(0,20);
+    let hT = "", hB = "";
+    top.forEach(d => hT += `<tr><td>${d.nama}</td><td>${d.skor}</td></tr>`);
+    bot.forEach(d => hB += `<tr><td>${d.nama}</td><td>${d.skor}</td></tr>`);
+    document.querySelector('#table-top tbody').innerHTML = hT;
+    document.querySelector('#table-bottom tbody').innerHTML = hB;
+}
+
+function next() { if (n < 29) { n++; tampil(); } }
+function prev() { if (n > 0) { n--; tampil(); } }
+</script>
+</body>
+</html>
